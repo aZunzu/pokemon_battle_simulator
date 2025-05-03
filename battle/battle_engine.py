@@ -51,6 +51,9 @@ class BattleEngine:
 
         # Calculate base damage
         damage = ((2 * level / 5 + 2) * power * (attack_stat / defense_stat)) / 50 + 2
+        #Calculate critico
+        if random.uniform(0,100) < 4:
+            damage*=1.5
 
         # Apply STAB (Same Type Attack Bonus)
         if move.type in attacker.types:
@@ -66,44 +69,47 @@ class BattleEngine:
         # Return integer damage (minimum 1)
         return max(1, int(damage))
 
-    def _apply_move(self, attacker: Pokemon, defender: Pokemon, move_index: int) -> Tuple[int, str, float]:
+    def _apply_move(self, attacker: Pokemon, defender: Pokemon, move_index: int, isfainted: bool) -> Tuple[int, str, float]:
         """Apply a move from attacker to defender."""
-        move = attacker.moves[move_index]
+        if isfainted:
+            return 0, f"", 0.0
+        else:
+            move = attacker.moves[move_index]
 
-        # Check if move hits
-        accuracy_check = random.uniform(0, 100)
-        if accuracy_check > move.accuracy:
-            return 0, f"{attacker.name}'s {move.name} missed!", 0.0
+            # Check if move hits
+            accuracy_check = random.uniform(0, 100)
+            if accuracy_check > move.accuracy:
+                return 0, f"{attacker.name}'s {move.name} missed!", 0.0
 
-        # Reduce PP
-        move.current_pp -= 1
+            # Reduce PP
+            move.current_pp -= 1
 
-        # Handle different move categories
-        if move.category in ["physical", "special"]:
-            # Calculate and apply damage
-            damage = self._calculate_damage(attacker, defender, move_index)
-            defender.current_hp = max(0, defender.current_hp - damage)
+            # Handle different move categories
+            if move.category in ["physical", "special"]:
+                # Calculate and apply damage
+                damage = self._calculate_damage(attacker, defender, move_index)
+                defender.current_hp = max(0, defender.current_hp - damage)
 
-            # Determine effectiveness message
-            effectiveness = self._calculate_type_effectiveness(move.type, defender.types)
+                # Determine effectiveness message
+                effectiveness = self._calculate_type_effectiveness(move.type, defender.types)
 
-            if effectiveness > 1.5:
-                effect_msg = "It's super effective!"
-            elif effectiveness < 0.5:
-                effect_msg = "It's not very effective..."
-            elif effectiveness == 0:
-                effect_msg = "It has no effect..."
-            else:
-                effect_msg = ""
+                if effectiveness > 1.5:
+                    effect_msg = "It's super effective!"
+                elif effectiveness < 0.5:
+                    effect_msg = "It's not very effective..."
+                elif effectiveness == 0:
+                    effect_msg = "It has no effect..."
+                else:
+                    effect_msg = ""
 
-            message = f"{attacker.name} used {move.name}!"
-            if effect_msg:
-                message += f" {effect_msg}"
+                message = f"{attacker.name} used {move.name}!"
+                if effect_msg:
+                    message += f" {effect_msg}"
 
-            if damage > 0:
-                message += f" {defender.name} lost {damage} HP!"
+                if damage > 0:
+                    message += f" {defender.name} lost {damage} HP!"
 
-            return damage, message, effectiveness
+                return damage, message, effectiveness
 
         # Status moves could be implemented here
         # For now, just return a simple message
@@ -198,6 +204,8 @@ class BattleEngine:
 
     def process_turn(self, player_choice: str, player_move_index: Optional[int] = None) -> List[str]:
         """Process a single turn of battle."""
+        isfaintedhuman=False
+        isfaintedIA=False
         self.turn_count += 1
         turn_log = []
 
@@ -208,11 +216,33 @@ class BattleEngine:
         player_switch = None
         player_move_index = None
 
-        if player_choice.startswith("switch"):
+        # If player's current Pokémon is fainted, they must switch
+        if player_pokemon.is_fainted():
+            if player_choice.startswith("switch"):
+                try:
+                    player_switch = int(player_choice.split()[1])
+                    if player_switch < 0 or player_switch >= len(self.player_team.pokemon):
+                        turn_log.append("Invalid switch index!")
+                        return turn_log
+                    if self.player_team.pokemon[player_switch].is_fainted():
+                        turn_log.append("That Pokémon has fainted! Choose another.")
+                        return turn_log
+                    isfaintedhuman=True
+                except (IndexError, ValueError):
+                    turn_log.append("Invalid switch command!")
+                    return turn_log
+            else:
+                turn_log.append(f"{player_pokemon.name} has fainted! You must switch to another Pokémon.")
+                return turn_log
+
+        elif player_choice.startswith("switch"):
             try:
                 player_switch = int(player_choice.split()[1])
                 if player_switch < 0 or player_switch >= len(self.player_team.pokemon):
                     turn_log.append("Invalid switch index!")
+                    return turn_log
+                if self.player_team.pokemon[player_switch].is_fainted():
+                    turn_log.append("That Pokémon has fainted! Choose another.")
                     return turn_log
             except (IndexError, ValueError):
                 turn_log.append("Invalid switch command!")
@@ -223,6 +253,9 @@ class BattleEngine:
                 player_move_index = int(player_choice) - 1  # 1-indexed for user, 0-indexed internally
                 if player_move_index < 0 or player_move_index >= len(player_pokemon.moves):
                     turn_log.append("Invalid move selection!")
+                    return turn_log
+                if player_pokemon.moves[player_move_index].current_pp <= 0:
+                    turn_log.append("No PP left for that move!")
                     return turn_log
             except ValueError:
                 turn_log.append("Invalid command! Enter a move number or 'switch X'")
@@ -245,6 +278,7 @@ class BattleEngine:
         if ai_switch_index is not None:
             self.ai_team.switch_pokemon(ai_switch_index)
             ai_pokemon = self.ai_team.get_active_pokemon()
+            isfaintedIA=True
             turn_log.append(f"Opponent switched to {ai_pokemon.name}!")
 
         # If both used moves, determine order
@@ -258,16 +292,8 @@ class BattleEngine:
                 # Check if AI Pokemon fainted
                 if ai_pokemon.is_fainted():
                     turn_log.append(f"{ai_pokemon.name} fainted!")
-
-                    # AI sends out next Pokemon
-                    next_pokemon_index = self.ai_team.get_first_non_fainted()
-                    if next_pokemon_index >= 0:
-                        self.ai_team.switch_pokemon(next_pokemon_index)
-                        ai_pokemon = self.ai_team.get_active_pokemon()
-                        turn_log.append(f"Opponent sent out {ai_pokemon.name}!")
-                    else:
-                        turn_log.append("You defeated all of the opponent's Pokemon! You win!")
-                        return turn_log
+                    # Skip AI's move since their Pokémon fainted
+                    # AI will switch next turn automatically
                 else:
                     # AI Pokemon attacks
                     damage, message, _ = self._apply_move(ai_pokemon, player_pokemon, ai_move_index)
@@ -276,13 +302,7 @@ class BattleEngine:
                     # Check if player Pokemon fainted
                     if player_pokemon.is_fainted():
                         turn_log.append(f"{player_pokemon.name} fainted!")
-
-                        # Check if player has more Pokemon
-                        next_pokemon_index = self.player_team.get_first_non_fainted()
-                        if next_pokemon_index >= 0:
-                            turn_log.append("Choose your next Pokemon!")
-                        else:
-                            turn_log.append("All your Pokemon have fainted! You lose!")
+                        # Player will be forced to switch next turn
             else:
                 # AI goes first
                 damage, message, _ = self._apply_move(ai_pokemon, player_pokemon, ai_move_index)
@@ -291,14 +311,8 @@ class BattleEngine:
                 # Check if player Pokemon fainted
                 if player_pokemon.is_fainted():
                     turn_log.append(f"{player_pokemon.name} fainted!")
-
-                    # Check if player has more Pokemon
-                    next_pokemon_index = self.player_team.get_first_non_fainted()
-                    if next_pokemon_index >= 0:
-                        turn_log.append("Choose your next Pokemon!")
-                    else:
-                        turn_log.append("All your Pokemon have fainted! You lose!")
-                        return turn_log
+                    # Skip player's move since their Pokémon fainted
+                    # Player will be forced to switch next turn
                 else:
                     # Player Pokemon attacks
                     damage, message, _ = self._apply_move(player_pokemon, ai_pokemon, player_move_index)
@@ -307,53 +321,52 @@ class BattleEngine:
                     # Check if AI Pokemon fainted
                     if ai_pokemon.is_fainted():
                         turn_log.append(f"{ai_pokemon.name} fainted!")
+                        # AI will switch next turn automatically
 
-                        # AI sends out next Pokemon
-                        next_pokemon_index = self.ai_team.get_first_non_fainted()
-                        if next_pokemon_index >= 0:
-                            self.ai_team.switch_pokemon(next_pokemon_index)
-                            ai_pokemon = self.ai_team.get_active_pokemon()
-                            turn_log.append(f"Opponent sent out {ai_pokemon.name}!")
-                        else:
-                            turn_log.append("You defeated all of the opponent's Pokemon! You win!")
-
-        # If only one side used a move (due to switching)
+        # If only player used a move (due to AI switching earlier)
         elif player_move_index is not None:
-            damage, message, _ = self._apply_move(player_pokemon, ai_pokemon, player_move_index)
+            damage, message, _ = self._apply_move(player_pokemon, ai_pokemon, player_move_index, isfaintedIA)
             turn_log.append(message)
 
             # Check if AI Pokemon fainted
             if ai_pokemon.is_fainted():
                 turn_log.append(f"{ai_pokemon.name} fainted!")
+                # AI will switch next turn automatically
 
-                # AI sends out next Pokemon
-                next_pokemon_index = self.ai_team.get_first_non_fainted()
-                if next_pokemon_index >= 0:
-                    self.ai_team.switch_pokemon(next_pokemon_index)
-                    ai_pokemon = self.ai_team.get_active_pokemon()
-                    turn_log.append(f"Opponent sent out {ai_pokemon.name}!")
-                else:
-                    turn_log.append("You defeated all of the opponent's Pokemon! You win!")
-
+        # If only AI used a move (due to player switching earlier)
         elif ai_move_index is not None:
-            damage, message, _ = self._apply_move(ai_pokemon, player_pokemon, ai_move_index)
+            damage, message, _ = self._apply_move(ai_pokemon, player_pokemon, ai_move_index, isfaintedhuman)
             turn_log.append(message)
 
             # Check if player Pokemon fainted
             if player_pokemon.is_fainted():
                 turn_log.append(f"{player_pokemon.name} fainted!")
 
-                # Check if player has more Pokemon
-                next_pokemon_index = self.player_team.get_first_non_fainted()
-                if next_pokemon_index >= 0:
-                    turn_log.append("Choose your next Pokemon!")
-                else:
-                    turn_log.append("All your Pokemon have fainted! You lose!")
+
+
+        # Handle fainted Pokémon at the end of turn
+        if ai_pokemon.is_fainted():
+            # AI sends out next Pokemon
+            next_pokemon_index = self.ai_team.get_first_non_fainted()
+            if next_pokemon_index >= 0:
+                self.ai_team.switch_pokemon(next_pokemon_index)
+                ai_pokemon = self.ai_team.get_active_pokemon()
+                turn_log.append(f"Opponent sent out {ai_pokemon.name}!")
+            else:
+                turn_log.append("You defeated all of the opponent's Pokemon! You win!")
+
+        if player_pokemon.is_fainted():
+            # Check if player has more Pokemon
+            next_pokemon_index = self.player_team.get_first_non_fainted()
+            if next_pokemon_index >= 0:
+                turn_log.append("Choose your next Pokemon!")
+                # Player will be forced to switch next turn
+            else:
+                turn_log.append("All your Pokemon have fainted! You lose!")
 
         # Add to battle log
         self.battle_log.extend(turn_log)
         return turn_log
-
     def get_battle_status(self) -> Dict:
         """Get the current status of the battle."""
         return {
