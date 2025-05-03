@@ -17,9 +17,13 @@ class ChampionshipTeams:
         """Load championship teams."""
         # This would be expanded with actual championship teams
         team_names = [
-            ["charizard", "blastoise", "venusaur"],
-            ["pikachu", "jigglypuff", "mewtwo"],
-            ["gengar", "alakazam", "dragonite"]
+            ["landorus", "amoonguss", "politoed", "aegislash", "thundurus", "gardevoir"],
+            ["gardevoir", "amoonguss", "heatran", "scrafty", "thundurus", "landorus"],
+            ["wash rotom", "landorus", "amoonguss", "salamence", "tyranitar", "aegislash"],
+            ["charizard", "conkeldurr", "sylveon", "aegislash", "landorus", "thundurus"],
+            ["kangaskhan", "heatran", "landorus", "thundurus", "amoonguss", "milotic"],
+            ["excadrill", "gastrodon", "cresselia", "salamence", "heat rotom", "tyranitar"],
+            ["magikarp", "reshiram", "lugia", "rayquaza", "mewtwo", "arceus"]
         ]
 
         for names in team_names:
