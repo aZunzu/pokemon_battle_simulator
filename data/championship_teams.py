@@ -1,6 +1,7 @@
 """
 Championship teams for the Pokemon Battle Simulator
 """
+import random
 from models.team import PokemonTeam
 from data.pokeapi import PokeAPIClient
 

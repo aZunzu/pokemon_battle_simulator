@@ -1,6 +1,8 @@
 """
 PokeAPI client for the Pokemon Battle Simulator
 """
+from typing import Optional
+
 import requests
 from models.pokemon import Pokemon
 from models.move import Move
