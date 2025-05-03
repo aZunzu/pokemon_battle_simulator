@@ -9,7 +9,7 @@ class Move:
         self.power = power if power is not None else 0
         self.accuracy = accuracy
         self.max_pp = pp  # PP máximo
-        self.current_pp = pp  # PP actual (se reduce al usar el movimiento)
+        self.current_pp = pp  # PP actual
 
     def use(self):
         """Reduce PP by 1 when the move is used."""
@@ -21,4 +21,4 @@ class Move:
         self.current_pp = self.max_pp
 
     def __str__(self):
-        return f"{self.name} ({self.type}, {self.category}, Power: {self.power}, Acc: {self.accuracy}, PP: {self.current_pp}/{self.max_pp})"
+        return f"{self.name} (Type: {self.type}, Category: {self.category}, Power: {self.power}, Accuracy: {self.accuracy}, PP: {self.current_pp}/{self.max_pp})"
