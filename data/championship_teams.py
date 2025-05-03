@@ -22,7 +22,7 @@ class ChampionshipTeams:
             ["wash rotom", "landorus", "amoonguss", "salamence", "tyranitar", "aegislash"],
             ["charizard", "conkeldurr", "sylveon", "aegislash", "landorus", "thundurus"],
             ["kangaskhan", "heatran", "landorus", "thundurus", "amoonguss", "milotic"],
-            ["excadrill", "astrodon", "cresselia", "salamence", "heat rotom", "tyranitar"],
+            ["excadrill", "gastrodon", "cresselia", "salamence", "heat rotom", "tyranitar"],
             ["magikarp", "reshiram", "lugia", "rayquaza", "mewtwo", "arceus"]
         ]
 
