@@ -17,12 +17,12 @@ class ChampionshipTeams:
         """Load championship teams."""
         # This would be expanded with actual championship teams
         team_names = [
-            ["landorus", "amoonguss", "politoed", "aegislash", "thundurus", "gardevoir"],
-            ["gardevoir", "amoonguss", "heatran", "scrafty", "thundurus", "landorus"],
-            ["wash rotom", "landorus", "amoonguss", "salamence", "tyranitar", "aegislash"],
-            ["charizard", "conkeldurr", "sylveon", "aegislash", "landorus", "thundurus"],
-            ["kangaskhan", "heatran", "landorus", "thundurus", "amoonguss", "milotic"],
-            ["excadrill", "gastrodon", "cresselia", "salamence", "heat rotom", "tyranitar"],
+            ["Landorus-Therian", "amoonguss", "politoed", "aegislash-blade", "thundurus-Incarnate", "gardevoir"],
+            ["gardevoir", "amoonguss", "heatran", "scrafty", "thundurus-Incarnate", "Landorus-Therian"],
+            ["rotom-wash", "Landorus-Therian", "amoonguss", "salamence", "tyranitar", "aegislash-blade"],
+            ["charizard", "conkeldurr", "sylveon", "aegislash-blade", "Landorus-Therian", "thundurus-Incarnate"],
+            ["kangaskhan", "heatran", "Landorus-Therian", "thundurus-Incarnate", "amoonguss", "milotic"],
+            ["excadrill", "gastrodon", "cresselia", "salamence", "heat-rotom", "tyranitar"],
             ["magikarp", "reshiram", "lugia", "rayquaza", "mewtwo", "arceus"]
         ]
 
